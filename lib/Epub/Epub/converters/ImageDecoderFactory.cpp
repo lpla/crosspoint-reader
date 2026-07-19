@@ -1,6 +1,7 @@
 #include "ImageDecoderFactory.h"
 
 #include <Logging.h>
+#include <Memory.h>
 
 #include <memory>
 #include <string>
@@ -37,7 +38,11 @@ ImageToFramebufferDecoder* ImageDecoderFactory::getDecoder(const std::string& im
     return pngDecoder.get();
   } else if (GifToFramebufferConverter::supportsFormat(ext)) {
     if (!gifDecoder) {
-      gifDecoder.reset(new GifToFramebufferConverter());
+      gifDecoder = makeUniqueNoThrow<GifToFramebufferConverter>();
+      if (!gifDecoder) {
+        LOG_ERR("DEC", "OOM: GIF decoder");
+        return nullptr;
+      }
     }
     return gifDecoder.get();
   }
