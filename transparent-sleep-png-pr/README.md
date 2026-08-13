@@ -9,6 +9,8 @@ These files reproduce the transparent PNG follow-up to
 - `home-baseline-emulator.png`: the X4 simulator screen before sleeping.
 - `fit-overlay-emulator.png`: the same overlay rendered with **Fit** placement (480x640).
 - `crop-overlay-emulator.png`: the same overlay rendered with **Crop** placement (480x800).
+- `home-sleep-popup-emulator.png`: the restored transition popup over Home.
+- `landscape-reader-sleep-popup-emulator.png`: the same popup following a landscape reader orientation.
 
 The source artwork was AI-generated specifically as copyright-safe QA material. It is not based on an identified
 character or published work. The screenshots are simulator evidence, not physical-device photographs.
@@ -30,4 +32,6 @@ The same file can be placed in `/.sleep-overlay/` or `/sleep-overlay/` when test
 44213883a5515c8b1147b10391a1b34ca24447d0d4076aed81e97ad6ef0afcd4  home-baseline-emulator.png
 5c829d09d646e78cec96fa7203554312330684efcb16b15e352e4a8980fdf682  fit-overlay-emulator.png
 9bed8945715b98c7c20b68becf1566462efdc8cac24ca0594338ddb81836cf23  crop-overlay-emulator.png
+cd4308aa94b4d314171f24d482ad165f7af35f42300738ef1fe21406a32842fd  home-sleep-popup-emulator.png
+f2dfcfc23091f25fc1799bed2fd6828893b230c5035ee5272cba70ae9ac45f0c  landscape-reader-sleep-popup-emulator.png
 ```
