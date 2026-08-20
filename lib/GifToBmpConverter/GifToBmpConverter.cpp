@@ -16,6 +16,7 @@ namespace {
 constexpr bool USE_8BIT_OUTPUT = false;
 constexpr bool USE_ATKINSON = true;
 constexpr bool USE_FLOYD_STEINBERG = false;
+constexpr uint16_t MAX_CANVAS_HEIGHT = 3072;
 
 inline void write16(Print& out, const uint16_t value) {
   out.write(value & 0xFF);
@@ -353,7 +354,8 @@ bool GifToBmpConverter::gifFileToBmpStreamInternal(HalFile& gifFile, Print& bmpO
     LOG_ERR("GIF", "Interlaced GIFs are not supported for BMP conversion");
     return false;
   }
-  if (info.canvasWidth == 0 || info.canvasHeight == 0 || info.canvasWidth > MAX_WIDTH || info.canvasHeight > 3072) {
+  if (info.canvasWidth == 0 || info.canvasHeight == 0 || info.canvasWidth > MAX_WIDTH ||
+      info.canvasHeight > MAX_CANVAS_HEIGHT) {
     LOG_ERR("GIF", "Image too large or zero (%ux%u)", info.canvasWidth, info.canvasHeight);
     return false;
   }
