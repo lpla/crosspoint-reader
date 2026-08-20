@@ -46,6 +46,8 @@ struct JpegContext {
 
   PixelCache cache;
   bool caching{false};
+
+  uint32_t lastYieldMs{0};  // throttle state for yieldDuringDecode()
 };
 
 // File I/O callbacks use pFile->fHandle to access the HalFile*,
@@ -93,8 +95,6 @@ int32_t jpegSeek(JPEGFILE* pFile, int32_t pos) {
 // Heap-allocate on demand so memory is only used during active decode.
 constexpr size_t JPEG_DECODER_APPROX_SIZE = 20 * 1024;
 constexpr size_t MIN_FREE_HEAP_FOR_JPEG = JPEG_DECODER_APPROX_SIZE + 16 * 1024;
-constexpr int MAX_JPEG_SOURCE_PIXELS = 8 * 1024 * 1024;
-constexpr int MAX_JPEG_DIMENSION = 8192;
 
 // Choose JPEGDEC's built-in scale factor for coarse downscaling.
 // Returns the scale denominator (1, 2, 4, or 8) and sets jpegScaleOption.
@@ -115,28 +115,6 @@ int chooseJpegScale(float targetScale, int& jpegScaleOption) {
   return 1;
 }
 
-bool validateJpegDimensions(int width, int height, const std::string& imagePath) {
-  if (width <= 0 || height <= 0) {
-    LOG_ERR("JPG", "Invalid JPEG dimensions: %dx%d", width, height);
-    return false;
-  }
-
-  if (width > MAX_JPEG_DIMENSION || height > MAX_JPEG_DIMENSION) {
-    LOG_ERR("JPG", "JPEG dimensions too large: %dx%d, max dimension: %d, file=%s", width, height, MAX_JPEG_DIMENSION,
-            imagePath.c_str());
-    return false;
-  }
-
-  const int64_t pixels = (int64_t)width * height;
-  if (pixels > MAX_JPEG_SOURCE_PIXELS) {
-    LOG_ERR("JPG", "JPEG source too large: %dx%d = %lld pixels, max supported: %d, file=%s", width, height,
-            (long long)pixels, MAX_JPEG_SOURCE_PIXELS, imagePath.c_str());
-    return false;
-  }
-
-  return true;
-}
-
 // Fixed-point 16.16 arithmetic avoids software float emulation on ESP32-C3 (no FPU).
 constexpr int FP_SHIFT = 16;
 constexpr int32_t FP_ONE = 1 << FP_SHIFT;
@@ -145,6 +123,8 @@ constexpr int32_t FP_MASK = FP_ONE - 1;
 int jpegDrawCallback(JPEGDRAW* pDraw) {
   JpegContext* ctx = reinterpret_cast<JpegContext*>(pDraw->pUser);
   if (!ctx || !ctx->config || !ctx->renderer) return 0;
+
+  ImageToFramebufferDecoder::yieldDuringDecode(ctx->lastYieldMs);
 
   // In EIGHT_BIT_GRAYSCALE mode, pPixels contains 8-bit grayscale values
   // Buffer is densely packed: stride = pDraw->iWidth, valid columns = pDraw->iWidthUsed
@@ -398,9 +378,10 @@ bool JpegToFramebufferConverter::getDimensionsStatic(const std::string& imagePat
     return false;
   }
 
-  out.width = jpeg->getWidth();
-  out.height = jpeg->getHeight();
-  LOG_DBG("JPG", "Image dimensions: %dx%d", out.width, out.height);
+  const int width = jpeg->getWidth();
+  const int height = jpeg->getHeight();
+  if (!validateAndStoreDimensions(width, height, out, "JPEG")) return false;
+  LOG_DBG("JPG", "Image dimensions: %dx%d", width, height);
 
   return true;
 }
@@ -434,12 +415,10 @@ bool JpegToFramebufferConverter::decodeToFramebuffer(const std::string& imagePat
     return false;
   }
 
-  int srcWidth = jpeg->getWidth();
-  int srcHeight = jpeg->getHeight();
-
-  if (!validateJpegDimensions(srcWidth, srcHeight, imagePath)) {
-    return false;
-  }
+  ImageDimensions sourceDimensions;
+  if (!validateAndStoreDimensions(jpeg->getWidth(), jpeg->getHeight(), sourceDimensions, "JPEG")) return false;
+  const int srcWidth = sourceDimensions.width;
+  const int srcHeight = sourceDimensions.height;
 
   bool isProgressive = jpeg->getJPEGType() == JPEG_MODE_PROGRESSIVE;
   if (isProgressive) {
@@ -513,6 +492,7 @@ bool JpegToFramebufferConverter::decodeToFramebuffer(const std::string& imagePat
   }
 
   unsigned long decodeStart = millis();
+  ctx.lastYieldMs = decodeStart;
   rc = jpeg->decode(0, 0, jpegScaleOption);
   unsigned long decodeTime = millis() - decodeStart;
 

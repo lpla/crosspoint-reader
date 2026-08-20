@@ -1,6 +1,7 @@
 #include "GifToBmpConverter.h"
 
 #include <AnimatedGIF.h>
+#include <Arduino.h>
 #include <GifCommon.h>
 #include <HalDisplay.h>
 #include <Logging.h>
@@ -152,6 +153,7 @@ struct GifBmpContext {
   std::unique_ptr<FloydSteinbergDitherer> fsDitherer;
   std::unique_ptr<Atkinson1BitDitherer> atkinson1BitDitherer;
   bool success{true};
+  uint32_t lastYieldMs{0};
 };
 
 static HalFile* s_gifFile = nullptr;
@@ -286,6 +288,12 @@ void processGapRowsUpTo(int canvasY, GifBmpContext& ctx) {
 void gifBmpDrawCallback(GIFDRAW* pDraw) {
   auto* ctx = reinterpret_cast<GifBmpContext*>(pDraw->pUser);
   if (!ctx || !ctx->success || !ctx->grayRow || !ctx->whiteRow) return;
+
+  const uint32_t now = millis();
+  if (now - ctx->lastYieldMs >= 250) {
+    ctx->lastYieldMs = now;
+    vTaskDelay(1);
+  }
 
   const int canvasY = pDraw->iY + pDraw->y;
   if (canvasY < 0 || canvasY >= ctx->srcHeight) {
@@ -441,6 +449,7 @@ bool GifToBmpConverter::gifFileToBmpStreamInternal(HalFile& gifFile, Print& bmpO
   }
 
   int delayMs = 0;
+  ctx.lastYieldMs = millis();
   const int frameState = gif->playFrame(false, &delayMs, &ctx);
   if (!ctx.success || (gif->getLastError() != GIF_SUCCESS && gif->getLastError() != GIF_EMPTY_FRAME)) {
     LOG_ERR("GIF", "GIF decode failed (state=%d, err=%d)", frameState, gif->getLastError());

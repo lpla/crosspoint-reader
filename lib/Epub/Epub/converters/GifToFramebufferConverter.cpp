@@ -1,6 +1,7 @@
 #include "GifToFramebufferConverter.h"
 
 #include <AnimatedGIF.h>
+#include <Arduino.h>
 #include <FsHelpers.h>
 #include <GfxRenderer.h>
 #include <GifCommon.h>
@@ -35,6 +36,7 @@ struct GifContext {
   PixelCache cache;
   bool caching{false};
   bool success{true};
+  uint32_t lastYieldMs{0};
 };
 
 void updateGrayPalette(const GIFDRAW* pDraw, GifContext& ctx) {
@@ -152,6 +154,8 @@ void gifDrawCallback(GIFDRAW* pDraw) {
   auto* ctx = reinterpret_cast<GifContext*>(pDraw->pUser);
   if (!ctx || !ctx->success || !ctx->grayRow || !ctx->whiteRow) return;
 
+  ImageToFramebufferDecoder::yieldDuringDecode(ctx->lastYieldMs);
+
   const int canvasY = pDraw->iY + pDraw->y;
   if (canvasY < 0 || canvasY >= ctx->srcHeight) {
     ctx->success = false;
@@ -184,9 +188,7 @@ void gifDrawCallback(GIFDRAW* pDraw) {
 bool readGifInfoFromPath(const std::string& imagePath, GifBasicInfo& info) {
   HalFile file;
   if (!Storage.openFileForRead("GIF", imagePath, file)) return false;
-  const bool ok = GifCommon::readBasicInfo(file, info);
-  file.close();
-  return ok;
+  return GifCommon::readBasicInfo(file, info);
 }
 
 constexpr size_t GIF_DECODER_APPROX_SIZE = sizeof(AnimatedGIF);
@@ -200,9 +202,7 @@ bool GifToFramebufferConverter::getDimensionsStatic(const std::string& imagePath
     LOG_ERR("GIF", "Failed to read GIF dimensions: %s", imagePath.c_str());
     return false;
   }
-  out.width = static_cast<int16_t>(info.canvasWidth);
-  out.height = static_cast<int16_t>(info.canvasHeight);
-  return true;
+  return validateAndStoreDimensions(info.canvasWidth, info.canvasHeight, out, "GIF");
 }
 
 bool GifToFramebufferConverter::decodeToFramebuffer(const std::string& imagePath, GfxRenderer& renderer,
@@ -225,9 +225,8 @@ bool GifToFramebufferConverter::decodeToFramebuffer(const std::string& imagePath
             info.canvasWidth, info.canvasHeight, MAX_WIDTH, config.maxWidth, config.maxHeight, imagePath.c_str());
     return false;
   }
-  if (!validateImageDimensions(info.canvasWidth, info.canvasHeight, "GIF")) {
-    return false;
-  }
+  ImageDimensions sourceDimensions;
+  if (!validateAndStoreDimensions(info.canvasWidth, info.canvasHeight, sourceDimensions, "GIF")) return false;
 
   const size_t freeHeap = ESP.getFreeHeap();
   if (freeHeap < MIN_FREE_HEAP_FOR_GIF) {
@@ -246,8 +245,8 @@ bool GifToFramebufferConverter::decodeToFramebuffer(const std::string& imagePath
   ctx.config = &config;
   ctx.screenWidth = renderer.getScreenWidth();
   ctx.screenHeight = renderer.getScreenHeight();
-  ctx.srcWidth = info.canvasWidth;
-  ctx.srcHeight = info.canvasHeight;
+  ctx.srcWidth = sourceDimensions.width;
+  ctx.srcHeight = sourceDimensions.height;
 
   if (config.useExactDimensions && config.maxWidth > 0 && config.maxHeight > 0) {
     ctx.dstWidth = config.maxWidth;
@@ -301,6 +300,7 @@ bool GifToFramebufferConverter::decodeToFramebuffer(const std::string& imagePath
   }
 
   int delayMs = 0;
+  ctx.lastYieldMs = millis();
   const int frameState = gif->playFrame(false, &delayMs, &ctx);
   if (!ctx.success || (gif->getLastError() != GIF_SUCCESS && gif->getLastError() != GIF_EMPTY_FRAME)) {
     LOG_ERR("GIF", "GIF decode failed (state=%d, err=%d)", frameState, gif->getLastError());
