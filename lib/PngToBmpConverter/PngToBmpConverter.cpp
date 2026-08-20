@@ -626,12 +626,6 @@ bool PngToBmpConverter::pngFileToBmpStreamInternal(HalFile& pngFile, Print& bmpO
   std::unique_ptr<FloydSteinbergDitherer> fsDitherer;
   std::unique_ptr<Atkinson1BitDitherer> atkinson1BitDitherer;
 
-#if FREEINK_DRIVER_SSD1677
-  constexpr bool useOriginalThresholds = true;
-#else
-  constexpr bool useOriginalThresholds = false;
-#endif
-
   if (oneBit) {
     atkinson1BitDitherer = makeUniqueNoThrow<Atkinson1BitDitherer>(outWidth);
     if (!atkinson1BitDitherer || !atkinson1BitDitherer->isValid()) {
@@ -640,13 +634,13 @@ bool PngToBmpConverter::pngFileToBmpStreamInternal(HalFile& pngFile, Print& bmpO
     }
   } else if (!USE_8BIT_OUTPUT) {
     if (USE_ATKINSON) {
-      atkinsonDitherer = makeUniqueNoThrow<AtkinsonDitherer>(outWidth, useOriginalThresholds);
+      atkinsonDitherer = makeUniqueNoThrow<AtkinsonDitherer>(outWidth);
       if (!atkinsonDitherer || !atkinsonDitherer->isValid()) {
         LOG_ERR("PNG", "OOM: AtkinsonDitherer");
         return false;
       }
     } else if (USE_FLOYD_STEINBERG) {
-      fsDitherer = makeUniqueNoThrow<FloydSteinbergDitherer>(outWidth, useOriginalThresholds);
+      fsDitherer = makeUniqueNoThrow<FloydSteinbergDitherer>(outWidth);
       if (!fsDitherer || !fsDitherer->isValid()) {
         LOG_ERR("PNG", "OOM: FloydSteinbergDitherer");
         return false;
