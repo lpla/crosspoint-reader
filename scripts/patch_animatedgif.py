@@ -9,6 +9,7 @@ effect. The replacement is idempotent.
 
 Import("env")  # noqa: F821 (SCons-injected global)
 import os
+import re
 import sys
 
 
@@ -30,17 +31,36 @@ NEW_SNIPPET = """#define MAX_COLORS 256
 #endif // MAX_WIDTH
 """
 
+MAX_WIDTH_DEFINE_RE = re.compile(r"^\s*#\s*define\s+MAX_WIDTH\b", re.MULTILINE)
+MAX_WIDTH_GUARD_RE = re.compile(
+    r"^\s*#\s*(?:ifndef\s+MAX_WIDTH\b|if\s+!\s*defined\s*\(?\s*MAX_WIDTH\s*\)?)",
+    re.MULTILINE,
+)
+
 
 def _patch_header(header_path):
     with open(header_path, "r", encoding="utf-8") as file:
         text = file.read()
 
-    if NEW_SNIPPET in text:
+    max_width_define = MAX_WIDTH_DEFINE_RE.search(text)
+    max_width_guard = MAX_WIDTH_GUARD_RE.search(text)
+    if NEW_SNIPPET in text or (
+        max_width_define
+        and max_width_guard
+        and max_width_guard.start() < max_width_define.start()
+    ):
         return True
 
     if OLD_SNIPPET not in text:
+        if not max_width_define:
+            sys.stderr.write(
+                "WARNING: AnimatedGIF no longer defines MAX_WIDTH in %s\n"
+                % header_path
+            )
+            return True
         sys.stderr.write(
-            "ERROR: AnimatedGIF MAX_WIDTH block not found in %s\n" % header_path
+            "ERROR: AnimatedGIF has an unguarded MAX_WIDTH definition in %s\n"
+            % header_path
         )
         raise SystemExit(1)
 
@@ -52,20 +72,14 @@ def _patch_header(header_path):
 
 
 def patch_animatedgif(env, require_found=False):
-    libdeps_dir = os.path.join(env["PROJECT_DIR"], ".pio", "libdeps")
-    patched_any = False
-
-    if os.path.isdir(libdeps_dir):
-        for env_dir in os.listdir(libdeps_dir):
-            header_path = os.path.join(
-                libdeps_dir,
-                env_dir,
-                "AnimatedGIF",
-                "src",
-                "AnimatedGIF.h",
-            )
-            if os.path.isfile(header_path):
-                patched_any = _patch_header(header_path) or patched_any
+    header_path = os.path.join(
+        env.subst("$PROJECT_LIBDEPS_DIR"),
+        env.subst("$PIOENV"),
+        "AnimatedGIF",
+        "src",
+        "AnimatedGIF.h",
+    )
+    patched_any = os.path.isfile(header_path) and _patch_header(header_path)
 
     if require_found and not patched_any:
         sys.stderr.write("ERROR: AnimatedGIF dependency was not found to patch\n")
