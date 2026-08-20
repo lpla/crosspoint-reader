@@ -148,7 +148,7 @@ struct GifBmpContext {
   std::unique_ptr<uint8_t[]> whiteRow;
   std::unique_ptr<uint8_t[]> rowBuffer;
   std::unique_ptr<uint32_t[]> rowAccum;
-  std::unique_ptr<uint16_t[]> rowCount;
+  std::unique_ptr<uint32_t[]> rowCount;
   std::unique_ptr<AtkinsonDitherer> atkinsonDitherer;
   std::unique_ptr<FloydSteinbergDitherer> fsDitherer;
   std::unique_ptr<Atkinson1BitDitherer> atkinson1BitDitherer;
@@ -232,7 +232,13 @@ void emitOutputRow(const uint8_t* row, GifBmpContext& ctx, int outY) {
       ctx.fsDitherer->nextRow();
   }
 
-  ctx.bmpOut->write(ctx.rowBuffer.get(), ctx.bytesPerRow);
+  const size_t bytesPerRow = static_cast<size_t>(ctx.bytesPerRow);
+  const size_t written = ctx.bmpOut->write(ctx.rowBuffer.get(), bytesPerRow);
+  if (written != bytesPerRow) {
+    LOG_ERR("GIF", "Short BMP row write (%u of %u bytes)", static_cast<unsigned>(written),
+            static_cast<unsigned>(bytesPerRow));
+    ctx.success = false;
+  }
 }
 
 void processCanvasRow(const uint8_t* grayRow, int srcY, GifBmpContext& ctx) {
@@ -274,7 +280,7 @@ void processCanvasRow(const uint8_t* grayRow, int srcY, GifBmpContext& ctx) {
       continue;
     }
     memset(ctx.rowAccum.get(), 0, static_cast<size_t>(ctx.dstWidth) * sizeof(uint32_t));
-    memset(ctx.rowCount.get(), 0, static_cast<size_t>(ctx.dstWidth) * sizeof(uint16_t));
+    memset(ctx.rowCount.get(), 0, static_cast<size_t>(ctx.dstWidth) * sizeof(uint32_t));
   }
 }
 
@@ -358,7 +364,12 @@ bool GifToBmpConverter::gifFileToBmpStreamInternal(HalFile& gifFile, Print& bmpO
     return false;
   }
 
-  GifBmpContext ctx;
+  auto ctxPtr = makeUniqueNoThrow<GifBmpContext>();
+  if (!ctxPtr) {
+    LOG_ERR("GIF", "OOM: GIF BMP context");
+    return false;
+  }
+  GifBmpContext& ctx = *ctxPtr;
   ctx.bmpOut = &bmpOut;
   ctx.srcWidth = info.canvasWidth;
   ctx.srcHeight = info.canvasHeight;
@@ -405,14 +416,14 @@ bool GifToBmpConverter::gifFileToBmpStreamInternal(HalFile& gifFile, Print& bmpO
 
   if (ctx.needsScaling) {
     ctx.rowAccum = makeUniqueNoThrow<uint32_t[]>(ctx.dstWidth);
-    ctx.rowCount = makeUniqueNoThrow<uint16_t[]>(ctx.dstWidth);
+    ctx.rowCount = makeUniqueNoThrow<uint32_t[]>(ctx.dstWidth);
     ctx.scaledGrayRow = makeUniqueNoThrow<uint8_t[]>(ctx.dstWidth);
     if (!ctx.rowAccum || !ctx.rowCount || !ctx.scaledGrayRow) {
       LOG_ERR("GIF", "OOM: GIF scaling accumulators");
       return false;
     }
     memset(ctx.rowAccum.get(), 0, static_cast<size_t>(ctx.dstWidth) * sizeof(uint32_t));
-    memset(ctx.rowCount.get(), 0, static_cast<size_t>(ctx.dstWidth) * sizeof(uint16_t));
+    memset(ctx.rowCount.get(), 0, static_cast<size_t>(ctx.dstWidth) * sizeof(uint32_t));
   }
 
   if (oneBit) {
