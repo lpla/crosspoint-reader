@@ -146,6 +146,50 @@ TEST(ReleaseJsonParser, RealisticMinified) {
   EXPECT_EQ(p.getFirmwareSize(), 1572864u);
 }
 
+TEST(ReleaseJsonParser, DevelopLplaRelease) {
+  const char* json = R"({
+      "tag_name": "1.5.0-lpla.deadbeef",
+      "assets": [
+        {"name": "manifest.json", "browser_download_url": "https://example.com/manifest.json", "size": 256},
+        {"name": "firmware-x4pro.bin", "browser_download_url": "https://example.com/wrong-board.bin", "size": 1024},
+        {"name": "firmware.bin", "browser_download_url": "https://example.com/firmware.bin", "size": 5748897},
+        {"name": "crosspoint-1.5.0-lpla.deadbeef-x3-x4.bin", "browser_download_url": "https://example.com/renamed.bin", "size": 2048},
+        {"name": "firmware.bin.sha256", "browser_download_url": "https://example.com/firmware.bin.sha256", "size": 79}
+      ]
+    })";
+
+  for (const size_t chunkSize : {size_t{1}, size_t{17}, strlen(json)}) {
+    SCOPED_TRACE(chunkSize);
+    ReleaseJsonParser p;
+    p.setFirmwareAssetName("firmware.bin");
+    feedChunked(p, json, chunkSize);
+
+    EXPECT_TRUE(p.foundTag());
+    EXPECT_TRUE(p.foundFirmware());
+    EXPECT_STREQ(p.getTagName(), "1.5.0-lpla.deadbeef");
+    EXPECT_STREQ(p.getFirmwareUrl(), "https://example.com/firmware.bin");
+    EXPECT_EQ(p.getFirmwareSize(), 5748897u);
+  }
+}
+
+TEST(ReleaseJsonParser, DevelopLplaReleaseRejectsOtherAssetNames) {
+  const char* json = R"({
+      "tag_name": "1.5.0-lpla.deadbeef",
+      "assets": [
+        {"name": "firmware-x4pro.bin", "browser_download_url": "https://example.com/wrong-board.bin", "size": 1024},
+        {"name": "crosspoint-1.5.0-lpla.deadbeef-x3-x4.bin", "browser_download_url": "https://example.com/renamed.bin", "size": 2048},
+        {"name": "firmware.bin.sha256", "browser_download_url": "https://example.com/firmware.bin.sha256", "size": 79}
+      ]
+    })";
+
+  ReleaseJsonParser p;
+  p.setFirmwareAssetName("firmware.bin");
+  feedChunked(p, json, 17);
+
+  EXPECT_TRUE(p.foundTag());
+  EXPECT_FALSE(p.foundFirmware());
+}
+
 TEST(ReleaseJsonParser, PrettyAndMinifiedAgree) {
   ReleaseJsonParser pretty;
   pretty.feed(kRealisticPretty, strlen(kRealisticPretty));
