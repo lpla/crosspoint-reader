@@ -34,8 +34,9 @@ class OtaUpdateActivity : public Activity {
   void runUpdateInstall();
 
  public:
-  explicit OtaUpdateActivity(GfxRenderer& renderer, MappedInputManager& mappedInput)
-      : Activity("OtaUpdate", renderer, mappedInput), updater() {}
+  explicit OtaUpdateActivity(GfxRenderer& renderer, MappedInputManager& mappedInput,
+                             OtaUpdater::Channel channel = OtaUpdater::Channel::OFFICIAL)
+      : Activity("OtaUpdate", renderer, mappedInput), updater(channel) {}
   void onEnter() override;
   void onExit() override;
   void loop() override;
