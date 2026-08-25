@@ -19,11 +19,22 @@
 #include "FirmwareFlasher.h"
 
 namespace {
-constexpr char latestReleaseUrl[] = "https://api.github.com/repos/crosspoint-reader/crosspoint-reader/releases/latest";
+constexpr char officialReleaseUrl[] =
+    "https://api.github.com/repos/crosspoint-reader/crosspoint-reader/releases/latest";
+#ifdef CROSSPOINT_LPLA_OTA
+constexpr char developLplaReleaseUrl[] = "https://api.github.com/repos/lpla/crosspoint-reader/releases/latest";
+#endif
 }  // namespace
 
 OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() {
   LOG_DBG("OTA", "Checking for update (current: %s)", CROSSPOINT_VERSION);
+
+  const char* releaseUrl = officialReleaseUrl;
+#ifdef CROSSPOINT_LPLA_OTA
+  if (channel == Channel::DEVELOP_LPLA) {
+    releaseUrl = developLplaReleaseUrl;
+  }
+#endif
 
   // Stream the ~32KB release JSON straight into the parser as it arrives.
   // Buffering the whole body in a std::string would add a growing allocation
@@ -42,7 +53,15 @@ OtaUpdater::OtaUpdaterError OtaUpdater::checkForUpdate() {
   }
   char assetName[48] = {};
   bool assetNameSet = false;
-  const bool ok = HttpDownloader::fetchUrl(latestReleaseUrl, [&](const uint8_t* data, size_t len) {
+#ifdef CROSSPOINT_LPLA_OTA
+  // The fork keeps stable asset names for devices already using its OTA channel.
+  if (channel == Channel::DEVELOP_LPLA) {
+    snprintf(assetName, sizeof(assetName), "firmware%s.bin", isX4 ? "" : assetSuffix);
+    releaseParser.setFirmwareAssetName(assetName);
+    assetNameSet = true;
+  }
+#endif
+  const bool ok = HttpDownloader::fetchUrl(releaseUrl, [&](const uint8_t* data, size_t len) {
     size_t offset = 0;
     while (!assetNameSet && offset < len) {
       releaseParser.feed(reinterpret_cast<const char*>(data + offset), 1);
@@ -89,6 +108,15 @@ bool OtaUpdater::isUpdateNewer() const {
   if (!updateAvailable || latestVersion.empty() || latestVersion == CROSSPOINT_VERSION) {
     return false;
   }
+
+#ifdef CROSSPOINT_LPLA_OTA
+  // develop-lpla releases embed their integration commit in both the release
+  // tag and firmware version. Any different published build is intentional,
+  // including an explicit rollback selected by replacing the latest release.
+  if (channel == Channel::DEVELOP_LPLA) {
+    return true;
+  }
+#endif
 
   int currentMajor, currentMinor, currentPatch;
   int latestMajor, latestMinor, latestPatch;
