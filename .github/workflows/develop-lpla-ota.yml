@@ -1,0 +1,133 @@
+name: Publish develop-lpla OTA
+
+on:
+  push:
+    branches: [develop-lpla]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: develop-lpla-ota
+  cancel-in-progress: true
+
+jobs:
+  validate-build-publish:
+    if: github.repository == 'lpla/crosspoint-reader'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          # pioarduino's Linux cppcheck binary requires libpcre.so.3.
+          sudo apt-get install -y cmake ninja-build libpcre3
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+          enable-cache: false
+
+      - name: Install PlatformIO Core
+        run: |
+          uv pip install --system -U https://github.com/pioarduino/platformio-core/archive/refs/tags/v6.1.19.zip
+          uv pip install --system -U "littlefs-python>=0.16.0" "fatfs-ng>=0.1.14" "pyyaml>=6.0.2" \
+            "rich-click>=1.8.6" "zopfli>=0.2.2" "intelhex>=2.3.0" "rich>=14.0.0" "urllib3<2" \
+            "cryptography>=45.0.3" "certifi>=2025.8.3" "ecdsa>=0.19.1" "bitstring>=4.3.1" \
+            "reedsolo>=1.5.3,<1.8" "esp-idf-size>=2.0.0" "esp-coredump>=1.14.0"
+
+      - name: Cache PlatformIO packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-${{ runner.os }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: pio-${{ runner.os }}-
+
+      - name: Set firmware version
+        id: version
+        run: |
+          set -euo pipefail
+          base_version="$(awk -F ' *= *' '/^version = / { print $2; exit }' platformio.ini)"
+          test -n "$base_version"
+          short_sha="${GITHUB_SHA::8}"
+          version="${base_version}-lpla.${short_sha}"
+          echo "CROSSPOINT_LPLA_VERSION=$version" >> "$GITHUB_ENV"
+          echo "short_sha=$short_sha" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Run host unit tests
+        run: |
+          cmake -S test -B build/test -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/test
+          ctest --test-dir build/test --output-on-failure -j
+
+      - name: Run static analysis
+        run: pio check -e lpla_ota --fail-on-defect low --fail-on-defect medium --fail-on-defect high
+
+      - name: Build X4 and X3 OTA firmware
+        run: pio run -e lpla_ota -j1 | tee pio.log
+
+      - name: Prepare release assets
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp .pio/build/lpla_ota/firmware.bin dist/firmware.bin
+          (
+            cd dist
+            sha256sum firmware.bin > firmware.bin.sha256
+          )
+          firmware_sha="$(cut -d ' ' -f1 dist/firmware.bin.sha256)"
+          jq -n \
+            --arg version "$CROSSPOINT_LPLA_VERSION" \
+            --arg commit "$GITHUB_SHA" \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg firmware_sha256 "$firmware_sha" \
+            --arg built_at "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            '{version:$version,commit:$commit,branch:"develop-lpla",repository:$repository,firmware_sha256:$firmware_sha256,built_at:$built_at}' \
+            > dist/manifest.json
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: develop-lpla-${{ steps.version.outputs.short_sha }}
+          path: dist/
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current_sha="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/develop-lpla" --jq .object.sha)"
+          if [ "$current_sha" != "$GITHUB_SHA" ]; then
+            echo "This run was superseded by $current_sha; skipping publication."
+            exit 0
+          fi
+
+          if gh release view "$CROSSPOINT_LPLA_VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$CROSSPOINT_LPLA_VERSION" --repo "$GITHUB_REPOSITORY" --latest
+          else
+            gh release create "$CROSSPOINT_LPLA_VERSION" \
+              dist/firmware.bin \
+              dist/firmware.bin.sha256 \
+              dist/manifest.json \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "$CROSSPOINT_LPLA_VERSION" \
+              --notes "Automated OTA build from develop-lpla at ${GITHUB_SHA}." \
+              --latest
+          fi
+
+          gh release view "$CROSSPOINT_LPLA_VERSION" --repo "$GITHUB_REPOSITORY" \
+            --json tagName,targetCommitish,isDraft,isPrerelease,assets \
+            --jq '{tagName,targetCommitish,isDraft,isPrerelease,assets:[.assets[].name]}'
