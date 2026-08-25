@@ -1,8 +1,17 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 class OtaUpdater {
+ public:
+  enum class Channel : uint8_t {
+    OFFICIAL,
+    DEVELOP_LPLA,
+  };
+
+ private:
+  Channel channel;
   bool updateAvailable = false;
   std::string latestVersion;
   std::string otaUrl;
@@ -30,7 +39,7 @@ class OtaUpdater {
 
   size_t getTotalSize() const { return totalSize; }
 
-  OtaUpdater() = default;
+  explicit OtaUpdater(Channel channel = Channel::OFFICIAL) : channel(channel) {}
   bool isUpdateNewer() const;
   const std::string& getLatestVersion() const;
   OtaUpdaterError checkForUpdate();
