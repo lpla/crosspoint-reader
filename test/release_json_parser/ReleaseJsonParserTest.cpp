@@ -146,6 +146,26 @@ TEST(ReleaseJsonParser, RealisticMinified) {
   EXPECT_EQ(p.getFirmwareSize(), 1572864u);
 }
 
+TEST(ReleaseJsonParser, DevelopLplaRelease) {
+  const char* json = R"({
+      "tag_name": "1.5.0-lpla.deadbeef",
+      "assets": [
+        {"name": "manifest.json", "browser_download_url": "https://example.com/manifest.json", "size": 256},
+        {"name": "firmware.bin", "browser_download_url": "https://example.com/firmware.bin", "size": 5748897},
+        {"name": "firmware.bin.sha256", "browser_download_url": "https://example.com/firmware.bin.sha256", "size": 79}
+      ]
+    })";
+
+  ReleaseJsonParser p;
+  feedChunked(p, json, 17);
+
+  EXPECT_TRUE(p.foundTag());
+  EXPECT_TRUE(p.foundFirmware());
+  EXPECT_STREQ(p.getTagName(), "1.5.0-lpla.deadbeef");
+  EXPECT_STREQ(p.getFirmwareUrl(), "https://example.com/firmware.bin");
+  EXPECT_EQ(p.getFirmwareSize(), 5748897u);
+}
+
 TEST(ReleaseJsonParser, PrettyAndMinifiedAgree) {
   ReleaseJsonParser pretty;
   pretty.feed(kRealisticPretty, strlen(kRealisticPretty));
