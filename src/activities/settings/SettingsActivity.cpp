@@ -93,6 +93,10 @@ void SettingsActivity::rebuildSettingsLists() {
   // OTA fetches this board's own release asset (see OtaUpdater); boards whose
   // asset isn't published yet just report no update available.
   systemSettings.push_back(SettingInfo::Action(StrId::STR_CHECK_UPDATES, SettingAction::CheckForUpdates));
+#ifdef CROSSPOINT_LPLA_OTA
+  systemSettings.push_back(
+      SettingInfo::Action(StrId::STR_CHECK_DEVELOP_LPLA_UPDATES, SettingAction::CheckForDevelopLplaUpdates));
+#endif
   systemSettings.push_back(SettingInfo::Action(StrId::STR_SD_FIRMWARE_UPDATE, SettingAction::SdFirmwareUpdate));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_LANGUAGE, SettingAction::Language));
   systemSettings.push_back(SettingInfo::Action(StrId::STR_KEYBOARD_LAYOUTS, SettingAction::KeyboardLayouts));
@@ -346,6 +350,17 @@ void SettingsActivity::toggleCurrentSetting() {
       case SettingAction::CheckForUpdates:
         startActivityForResult(std::make_unique<OtaUpdateActivity>(renderer, mappedInput), resultHandler);
         break;
+#ifdef CROSSPOINT_LPLA_OTA
+      case SettingAction::CheckForDevelopLplaUpdates: {
+        auto activity = makeUniqueNoThrow<OtaUpdateActivity>(renderer, mappedInput, OtaUpdater::Channel::DEVELOP_LPLA);
+        if (!activity) {
+          LOG_ERR("SETTINGS", "OOM: OtaUpdateActivity");
+          break;
+        }
+        startActivityForResult(std::move(activity), resultHandler);
+        break;
+      }
+#endif
       case SettingAction::SdFirmwareUpdate:
         startActivityForResult(std::make_unique<SdFirmwareUpdateActivity>(renderer, mappedInput), resultHandler);
         break;
