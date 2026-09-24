@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "Epub/FootnoteEntry.h"
+#include "Epub/LayoutBuffer.h"
 #include "Epub/ParsedText.h"
 #include "Epub/blocks/ImageBlock.h"
 #include "Epub/blocks/TextBlock.h"
@@ -94,15 +95,22 @@ class ChapterHtmlSlimParser {
   static constexpr size_t MAX_GRID_TABLE_COLUMNS = 4;
   static constexpr size_t MAX_GRID_TABLE_CELL_WORDS = 32;
   static constexpr size_t MAX_GRID_TABLE_CELL_BYTES = 512;
+  static constexpr size_t MAX_GRID_TABLE_ANCHOR_BYTES = 256;
   int tableDepth = 0;
   bool insideTableCell = false;
   bool tableRowStacked = false;
   bool tableRowRtl = false;
+  bool tablePreviousRowWasGrid = false;
+  bool tablePreviousRowEndedWithSeparator = false;
   uint16_t tableRowsSpannedRemaining = 0;
   size_t tableCellTextBytes = 0;
-  std::vector<std::unique_ptr<ParsedText>> tableRowCells;
-  std::array<std::vector<std::unique_ptr<TextBlock>>, MAX_GRID_TABLE_COLUMNS> tableCellLines;
-  std::vector<uint32_t> tableLineVisibleOffsets;
+  LayoutBuffer<std::unique_ptr<ParsedText>> tableRowCells;
+  std::array<LayoutBuffer<std::unique_ptr<TextBlock>>, MAX_GRID_TABLE_COLUMNS> tableCellLines;
+  LayoutBuffer<uint32_t> tableLineVisibleOffsets;
+  std::array<char, MAX_GRID_TABLE_ANCHOR_BYTES> tableRowAnchorStorage{};
+  size_t tableRowAnchorCount = 0;
+  size_t tableRowAnchorBytes = 0;
+  uint8_t tableAnchorCellPendingLine = UINT8_MAX;
   bool listItemBulletOnly = false;  // true when currentTextBlock has only the <li> bullet
 
   // Tracks the innermost open <ul>/<ol> so <li> knows whether to number itself,
@@ -135,6 +143,7 @@ class ChapterHtmlSlimParser {
   bool currentPageVisibleOffsetSet = false;
   bool insideBody = false;
   bool htmlEnded_ = false;
+  bool layoutFailed = false;
   bool syntheticCharacterData = false;
   uint16_t nonVisibleTextDepth = 0;
 
@@ -163,14 +172,22 @@ class ChapterHtmlSlimParser {
 
   void updateEffectiveInlineStyle();
   void startNewTextBlock(const BlockStyle& blockStyle);
-  void flushPendingAnchor();
+  void flushPendingAnchor(const char* storedAnchor = nullptr);
   void flushPartWordBuffer();
+  void compactTableRowAnchors();
+  void collectPendingTableAnchor();
+  void flushTableRowAnchorsForCell(size_t cellIndex);
+  void flushPendingTableCellAnchors();
+  void flushTableRowAnchors();
   void fallbackTableRowToStacked();
   void closeTableCell();
   void finishTableRow();
   void addTableRowSeparator();
+  bool addTableGridSegment(uint8_t columnCount, int16_t topY, int16_t bottomY);
   void setCurrentPageVisibleOffset(uint32_t offset);
   void makePages();
+  void failLayout();
+  bool ensureCurrentPage();
   static EpdFontFamily::Style fontStyleForTextDecoration(CssTextDecoration decoration);
   static void applyDirectionToEntry(StyleStackEntry& entry, const CssStyle& css);
   static void applyTextDecorationToEntry(StyleStackEntry& entry, const CssStyle& css);
