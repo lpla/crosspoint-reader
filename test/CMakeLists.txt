@@ -73,11 +73,14 @@ add_subdirectory(txt_to_html)
 
 add_subdirectory(absolute_grayscale)
 
+add_subdirectory(gif_support)
+
 add_subdirectory(sd_card_font)
 add_subdirectory(glyph_bitmap)
 
 add_subdirectory(reader_session)
 add_subdirectory(plugin_manifest_classification)
+add_subdirectory(plugin_picker_layout)
 add_subdirectory(protected_paths)
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
