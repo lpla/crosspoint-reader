@@ -90,12 +90,26 @@ if (parsedSize != fileSize) {
 
 ## `section.bin`
 
+Each file in `sections/*.bin` stores one laid-out spine section. The header is
+also the cache-busting key: if any layout-affecting setting differs from the
+current reader settings, the section is discarded and rebuilt.
+
+### Version 53
+
+Version 53 adds a fixed-size table-grid-row page element containing its bounds
+and equal-width column count.
+
 ### Version 52
 
 The serialized layout is unchanged. Missing full-block (`U+2588`) and black-square
 (`U+25A0`) symbols now use font-sized solid rectangles instead of replacement
 glyphs. Rebuild older sections so cached line breaks and word positions match
 their new widths.
+
+### Version 51
+
+Version 51 preserves the serialized layout but rebuilds sections to retain
+paragraph indentation and spacing correctly across soft flushes.
 
 ### Version 50
 
@@ -136,10 +150,6 @@ because internal EPUB links now preserve CSS superscript and subscript styles,
 changing their cached word-style flags and page layout.
 
 ### Version 44
-
-Each file in `sections/*.bin` stores one laid-out spine section. The header is
-also the cache-busting key: if any layout-affecting setting differs from the
-current reader settings, the section is discarded and rebuilt.
 
 Version 44 appends the internal-link rectangles produced during text layout to
 each serialized page. The reader uses these rectangles for touch navigation;
@@ -214,7 +224,7 @@ import std.mem;
 import std.string;
 import std.core;
 
-#define EXPECTED_VERSION 50
+#define EXPECTED_VERSION 53
 #define MAX_STRING_LENGTH 65535
 #define FOOTNOTE_NUMBER_LEN 32
 #define FOOTNOTE_HREF_LEN 256
@@ -234,7 +244,8 @@ fn format_string(String s) {
 enum PageElementTag : u8 {
     TAG_PageLine = 1,
     TAG_PageImage = 2,
-    TAG_PageHorizontalRule = 3
+    TAG_PageHorizontalRule = 3,
+    TAG_PageTableGridRow = 4
 };
 
 enum WordStyle : u8 {
@@ -321,6 +332,14 @@ struct PageHorizontalRule {
     u8 thickness;
 };
 
+struct PageTableGridRow {
+    s16 xPos;
+    s16 yPos;
+    u16 width;
+    u16 height;
+    u8 columnCount;
+};
+
 struct PageElement {
     PageElementTag pageElementType;
     if (pageElementType == TAG_PageLine) {
@@ -329,6 +348,8 @@ struct PageElement {
         PageImage pageImage [[inline]];
     } else if (pageElementType == TAG_PageHorizontalRule) {
         PageHorizontalRule horizontalRule [[inline]];
+    } else if (pageElementType == TAG_PageTableGridRow) {
+        PageTableGridRow tableGridRow [[inline]];
     } else {
         std::error(std::format("Unknown page element type: {}", pageElementType));
     }
