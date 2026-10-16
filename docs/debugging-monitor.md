@@ -168,10 +168,13 @@ than automatically repeating an action. The command queue is bounded to 64 jobs.
 ## Screenshots and measurement limits
 
 The receiver handles fragmented binary transfers and validates the ending marker
-before publishing an image. A screenshot that has not started after 10 seconds
+before publishing an image. A screenshot that has not started after 120 seconds
 publishes `screenshot_error` and keeps the connection. A transfer that stalls
-after its metadata reconnects the port to resynchronize. While a screenshot is
-pending, only the firmware's `BUSY` and `NO_FRAMEBUFFER` rejections (`id=0`) fail
+after its metadata has a separate 120-second window before the port reconnects
+to resynchronize. The payload window starts at `SCREENSHOT_START` and does not
+extend for each received byte. These are host limits, not firmware timing changes.
+While a screenshot is pending, only the firmware's `BUSY` and `NO_FRAMEBUFFER`
+rejections (`id=0`) fail
 it; other `id=0` errors are unrelated. Other commands are rejected during
 screenshot transfers; serial release remains available to interrupt a transfer.
 Release builds without `ENABLE_SERIAL_CONTROL` still support screenshots.
@@ -218,6 +221,12 @@ preserving their distinction between preparation, rasterization, and display
 refresh. Host event timestamps and HTTP round-trip times are not render timings.
 Capture screenshots outside timed trials. The metadata change adds no device
 framebuffer or cache allocations; conversion buffers are allocated on the host.
+Enabled input control still adds fixed DRAM and CPU work. Compare identically
+instrumented builds, or use a release build for absolute heap measurements.
+Disabling input injection does not remove this branch's bounded command parser:
+its fixed buffer remains in release firmware. Do not label that zero-overhead.
+Keep raw logs, flash backups and screenshots containing credentials or private
+book content out of public test reports.
 
 ## Verification
 

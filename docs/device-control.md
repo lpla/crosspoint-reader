@@ -204,6 +204,9 @@ for the capture format and its limits.
 after the command. The default timeout is 60 seconds for the entire command,
 including all repetitions. Individual firmware discovery/state replies also
 have a 10-second limit. For `logs --follow`, the timeout bounds each HTTP poll.
+The monitor allows 120 seconds per screenshot stage; the CLI's whole-command
+deadline still applies first. For a slow capture, use e.g.
+`python3 scripts/device_control.py screenshot page.pbm --timeout 150`.
 `logs --after N` resumes from an event sequence number; `--filter TEXT` matches
 case-insensitive substrings. Older logs remain in the saved monitor directory.
 

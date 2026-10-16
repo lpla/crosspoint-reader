@@ -42,7 +42,8 @@ def open_serial(port, baud):
 
 class DeviceSession:
     MAX_SCREENSHOT = 2 * 1024 * 1024
-    SCREENSHOT_TIMEOUT = 10
+    # Slow reader work can delay capture; the CLI keeps its own operation deadline.
+    SCREENSHOT_TIMEOUT = 120
     # id=0 ERROR reasons that firmware sends for a rejected CMD:SCREENSHOT.
     # Other id=0 errors (INVALID_LINE, PARTIAL_TIMEOUT, ...) are unrelated.
     SCREENSHOT_ERRORS = frozenset(("BUSY", "NO_FRAMEBUFFER"))

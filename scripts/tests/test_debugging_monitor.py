@@ -1,6 +1,7 @@
 """Regressions for serial framing, capture orientation, and port ownership."""
 
 import http.client
+import io
 import json
 import os
 import queue
@@ -14,6 +15,7 @@ import unittest
 from collections import deque
 from concurrent.futures import Future
 from pathlib import Path
+from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS))
@@ -337,6 +339,56 @@ class HttpTests(SessionFixture):
 
 
 class ScreenshotTests(unittest.TestCase):
+    def test_slow_capture_keeps_command_identity_and_connection(self):
+        header = b"SCREENSHOT_META:1:8:2:1:0:0\nSCREENSHOT_START:2\n"
+        schedules = (
+            (
+                (20, b"reader still busy\n"),
+                (40, header + b"\x00"),
+                (60, b"\xffSCREENSHOT_END\n"),
+            ),
+            ((0, header), (20, b"\x00"), (40, b"\xffSCREENSHOT_END\n")),
+        )
+        for schedule in schedules:
+            with (
+                self.subTest(schedule=schedule),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                session = DeviceSession("fake", 115200, directory)
+                connection = FakeSerial()
+                session.connection = connection
+                session.raw_log = io.BytesIO()
+                now = [0]
+                chunks = iter(enumerate(schedule))
+
+                def read(_size):
+                    index, (now[0], data) = next(chunks)
+                    if index == len(schedule) - 1:
+                        session.stopped.set()
+                    return data
+
+                disconnect = session._disconnect
+
+                def stop_on_disconnect():
+                    session.stopped.set()
+                    disconnect()
+
+                with (
+                    patch("monitor_session.time.monotonic", side_effect=lambda: now[0]),
+                    patch.object(connection, "read", side_effect=read),
+                    patch.object(session, "_disconnect", side_effect=stop_on_disconnect),
+                ):
+                    sent = session._execute("command", "SCREENSHOT")
+                    session._run()
+                events = session.read_events()["events"]
+                captures = [e for e in events if e["type"] == "screenshot"]
+                self.assertEqual(len(captures), 1)
+                self.assertEqual(captures[0]["command_id"], sent["command_id"])
+                self.assertEqual(Path(captures[0]["raw_path"]).read_bytes(), b"\x00\xff")
+                self.assertFalse([e for e in events if e["type"] == "screenshot_error"])
+                self.assertFalse([e for e in events if e.get("state") == "disconnected"])
+                self.assertEqual(connection.writes, [b"CMD:SCREENSHOT\n"])
+
     def test_all_rotations_padded_rows_and_inversion(self):
         # A deliberately asymmetric 5x3 image with an extra padding byte per row.
         data = b"\x7f\x00\x9f\x00\xef\x00"
