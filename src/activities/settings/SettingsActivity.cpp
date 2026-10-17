@@ -100,8 +100,12 @@ void SettingsActivity::rebuildSettings() {
   const size_t count = std::count_if(all.begin(), all.end(), [this](const SettingInfo& setting) {
     return sectionFor(setting) == section && showOnDevice(setting);
   });
+  size_t extraRows = EXTRA_ROWS_PER_SECTION;
+#ifdef CROSSPOINT_LPLA_OTA
+  if (section == SettingsSection::General) ++extraRows;
+#endif
   settings.clear();
-  settings.reserve(count + EXTRA_ROWS_PER_SECTION);
+  settings.reserve(count + extraRows);
 
   const auto addAction = [this](SettingsSection target, StrId name, SettingAction action) {
     if (target == section) settings.push_back(SettingInfo::Action(name, action));
@@ -142,6 +146,9 @@ void SettingsActivity::rebuildSettings() {
   // OTA fetches this board's own release asset (see OtaUpdater); boards whose
   // asset isn't published yet just report no update available.
   addAction(SettingsSection::General, StrId::STR_CHECK_UPDATES, SettingAction::CheckForUpdates);
+#ifdef CROSSPOINT_LPLA_OTA
+  addAction(SettingsSection::General, StrId::STR_CHECK_DEVELOP_LPLA_UPDATES, SettingAction::CheckForDevelopLplaUpdates);
+#endif
   addAction(SettingsSection::General, StrId::STR_SD_FIRMWARE_UPDATE, SettingAction::SdFirmwareUpdate);
   addAction(SettingsSection::General, StrId::STR_ABOUT, SettingAction::About);
   rebuildRowItems();
@@ -346,6 +353,17 @@ void SettingsActivity::toggleSelectedSetting() {
       case SettingAction::CheckForUpdates:
         startActivityForResult(std::make_unique<OtaUpdateActivity>(renderer, mappedInput), resultHandler);
         break;
+#ifdef CROSSPOINT_LPLA_OTA
+      case SettingAction::CheckForDevelopLplaUpdates: {
+        auto activity = makeUniqueNoThrow<OtaUpdateActivity>(renderer, mappedInput, OtaUpdater::Channel::DEVELOP_LPLA);
+        if (!activity) {
+          LOG_ERR("SETTINGS", "OOM: OtaUpdateActivity");
+          break;
+        }
+        startActivityForResult(std::move(activity), resultHandler);
+        break;
+      }
+#endif
       case SettingAction::SdFirmwareUpdate:
         startActivityForResult(std::make_unique<SdFirmwareUpdateActivity>(renderer, mappedInput), resultHandler);
         break;
