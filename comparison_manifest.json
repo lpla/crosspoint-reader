@@ -1,0 +1,86 @@
+{
+  "fixture": "Same production ConfirmationActivity renderer, themes, locales and subjects; only the heading expression changes.",
+  "before": "Pre-PR button translation + question-mark suffix, including the deletion heading's trailing space.",
+  "after": "Dedicated translated confirmation question.",
+  "physical_validation": false,
+  "destructive_callbacks_executed": false,
+  "source_head": "ad24aea85c1f9b1a4b2b2e0719ec0dd39020a6b4",
+  "source_diff_sha256": "d85213eb72c57264c8ba77e3ed146524331db4c2294569ed954541e68b40d70e",
+  "fixture_sha256": "66c60d8c60e81ece1a5110b03b20648edbadc7486110b149c2cb72ad2b1a60d5",
+  "program_sha256": "75dc881121894a3a6883810cf86223c404df0479a32aeecf2436b0a52563201a",
+  "cases": [
+    {
+      "case": 147,
+      "phase": "before",
+      "file": "before-spanish-delete.png",
+      "size": [
+        960,
+        1600
+      ],
+      "heading": "Borrar? ",
+      "png_sha256": "0ba5ae60fd1486acd1b55f04d4c6bb00983c37c5b654c511e0a27754680cf53b",
+      "pixel_sha256": "8d54719f5dedd3d11b960c8ad19750beab4f1961810d2e82a58e79afea2dc405"
+    },
+    {
+      "case": 147,
+      "phase": "after",
+      "file": "after-spanish-delete.png",
+      "size": [
+        960,
+        1600
+      ],
+      "heading": "\u00bfBorrar?",
+      "png_sha256": "c7acc864577efe3b25977561ddc153d0d932da0be28954efe075f35b77ffd753",
+      "pixel_sha256": "f144d391057a0192d0fc737be0268405b5d8c2ec216da550c94b5eedb2834e3a"
+    },
+    {
+      "case": 173,
+      "phase": "before",
+      "file": "before-spanish-sleep-cover.png",
+      "size": [
+        960,
+        1600
+      ],
+      "heading": "Fondo?",
+      "png_sha256": "9f34475d6f64468357c425352e46f3e295e14e925161223d93f11024bf1435b8",
+      "pixel_sha256": "3cc82cfa1789f5a7eaedc295d9176b6255d012cb56f593169b08167b6040199d"
+    },
+    {
+      "case": 173,
+      "phase": "after",
+      "file": "after-spanish-sleep-cover.png",
+      "size": [
+        960,
+        1600
+      ],
+      "heading": "\u00bfUsar como fondo de reposo?",
+      "png_sha256": "702f951c765696d5fb0cce3eb80cb8932500891e5c3fb26681958cad570a5cff",
+      "pixel_sha256": "9302c7eb7c87f53acafc76e7960f9c2948bd1881c64ae35d1a9bbf097f30e95c"
+    },
+    {
+      "case": 203,
+      "phase": "before",
+      "file": "before-valencian-sleep-cover-landscape.png",
+      "size": [
+        1600,
+        960
+      ],
+      "heading": "Fixa fons?",
+      "png_sha256": "40943768d6d0ae36c9d5af7d5d906fb4b7dc1f67d984627a3740daaaf6d25d5b",
+      "pixel_sha256": "72d8fbcc6826a8d50784ea12e52a93cb183ae3e841783810a3c2ab6b00924c45"
+    },
+    {
+      "case": 203,
+      "phase": "after",
+      "file": "after-valencian-sleep-cover-landscape.png",
+      "size": [
+        1600,
+        960
+      ],
+      "heading": "Vols fixar el fons de rep\u00f2s?",
+      "png_sha256": "3d7489882842961212929b18b9d637b988f68319213b78dd6a6bd48dc6ab5a0e",
+      "pixel_sha256": "f2c632c488075c07ed820b5daa5ac72a76a518b081dc50d9b4553648412be25f"
+    }
+  ],
+  "fixture_file": "l10n-context-comparison-fixture.py"
+}

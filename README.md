@@ -22,10 +22,47 @@ the simulator component fixture.
   file-operation callbacks and is not included in firmware builds.
 - manifest.json preserves the original capture source-diff hash, selected case
   descriptors and pixel hashes, plus the published PNG and fixture file hashes.
-- The three selected frames come from a 288-case matrix: four languages, three
+- The original three selected frames come from a 288-case matrix: four languages, three
   themes, four orientations and six warning/confirmation cases.
 
-## Reproduce
+## Matched before/after pairs
+
+The six before-*.png / after-*.png files use the same simulator executable,
+production dialog, language, theme, orientation and subject within each pair.
+Only the heading expression changes:
+
+- Before: the old button translation plus `?` (and its old trailing space for
+  deletion).
+- After: the dedicated translated confirmation question.
+
+This is a comparison of the caller expressions in the same component fixture,
+not two complete historical-firmware runs. The after frames are pixel-identical
+to the original published captures. Button hints are unchanged within each pair.
+comparison_manifest.json records the exact heading strings and file/pixel hashes.
+No image was cropped, rescaled, retouched or given a text overlay.
+
+For these captures use l10n-context-comparison-fixture.py as the pre-build hook
+instead of the original fixture. Set CROSSPOINT_CONTEXT_CASE to 147 (Spanish
+delete, Classic), 173 (Spanish sleep cover, RoundedRaff), or 203 (Valencian sleep
+cover, landscape Lyra). For example, after building the simulator:
+
+```sh
+CROSSPOINT_CONTEXT_FIXTURE=1 CROSSPOINT_CONTEXT_CASE=147 \
+CROSSPOINT_CONTEXT_BEFORE=1 CROSSPOINT_SIM_SD=/tmp/confirmation-before-sd \
+CROSSPOINT_SIM_SCREENSHOTS='4000:/tmp/before.bmp' \
+CROSSPOINT_SIM_INPUT_SCRIPT='5000:QUIT' .pio/build/simulator/program
+
+env -u CROSSPOINT_CONTEXT_BEFORE \
+CROSSPOINT_CONTEXT_FIXTURE=1 CROSSPOINT_CONTEXT_CASE=147 \
+CROSSPOINT_SIM_SD=/tmp/confirmation-after-sd \
+CROSSPOINT_SIM_SCREENSHOTS='4000:/tmp/after.bmp' \
+CROSSPOINT_SIM_INPUT_SCRIPT='5000:QUIT' .pio/build/simulator/program
+```
+
+The before flag is presence-based: unset it for after, rather than setting it
+to `0`. Each example uses a separate disposable SD directory.
+
+## Reproduce the original matrix
 
 In a separate clean firmware worktree at the base above, initialize the pinned
 SDK recursively and apply the patch:
