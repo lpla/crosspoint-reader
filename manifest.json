@@ -1,0 +1,62 @@
+{
+  "source_head": "ad24aea85c1f9b1a4b2b2e0719ec0dd39020a6b4",
+  "source_diff_sha256": "d85213eb72c57264c8ba77e3ed146524331db4c2294569ed954541e68b40d70e",
+  "fixture": "Simulator-only loop; real popup renderer and ConfirmationActivity; no destructive operation executed.",
+  "physical_validation": false,
+  "original_matrix_count": 288,
+  "selected_count": 3,
+  "cases": [
+    {
+      "mode": "confirmation",
+      "orientation": 0,
+      "theme": "classic",
+      "language": "es",
+      "item": 0,
+      "file": "confirmation-0-classic-es-0",
+      "logical_bounds": [
+        24.5,
+        276.5,
+        456.5,
+        800.0
+      ],
+      "pixel_sha256": "f144d391057a0192d0fc737be0268405b5d8c2ec216da550c94b5eedb2834e3a"
+    },
+    {
+      "mode": "confirmation",
+      "orientation": 0,
+      "theme": "roundedraff",
+      "language": "es",
+      "item": 2,
+      "file": "confirmation-0-roundedraff-es-2",
+      "logical_bounds": [
+        19.5,
+        241.5,
+        460.5,
+        790.5
+      ],
+      "pixel_sha256": "9302c7eb7c87f53acafc76e7960f9c2948bd1881c64ae35d1a9bbf097f30e95c"
+    },
+    {
+      "mode": "confirmation",
+      "orientation": 1,
+      "theme": "lyra",
+      "language": "ca-valencia",
+      "item": 2,
+      "file": "confirmation-1-lyra-ca-valencia-2",
+      "logical_bounds": [
+        5.5,
+        57.5,
+        700.5,
+        422.5
+      ],
+      "pixel_sha256": "f2c632c488075c07ed820b5daa5ac72a76a518b081dc50d9b4553648412be25f"
+    }
+  ],
+  "file_sha256": {
+    "candidate.patch.gz": "6b227742aa07c5d4fed1db120bb68129663e646f46246b54d9b985c8a3051250",
+    "confirmation-0-classic-es-0.png": "c7acc864577efe3b25977561ddc153d0d932da0be28954efe075f35b77ffd753",
+    "confirmation-0-roundedraff-es-2.png": "702f951c765696d5fb0cce3eb80cb8932500891e5c3fb26681958cad570a5cff",
+    "confirmation-1-lyra-ca-valencia-2.png": "3d7489882842961212929b18b9d637b988f68319213b78dd6a6bd48dc6ab5a0e",
+    "l10n-context-fixture.py": "a66e91cbd3acbfd9ba59e971aac18f4918f50aa61c3d9187b2ac2332d2fb3b36"
+  }
+}
