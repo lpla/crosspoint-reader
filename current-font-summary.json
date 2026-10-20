@@ -1,0 +1,18 @@
+{
+  "physical_validation": false,
+  "source_base": "471243b2df886cb3f18474954ceac41a90a2a273",
+  "sdk": "f9cc1beda45f4d2d3dade69fc444165727424f53",
+  "program_sha256": "68c37359ee73e9f341d245c8c51acb26cf85c61aa58c4bb3609f775e88c7faa7",
+  "stages": 387,
+  "captures": 128,
+  "measured_widths": 12560,
+  "fixed_line_overflow": [],
+  "invalid_utf8_sequences": 0,
+  "locale_keys": {
+    "english": 644,
+    "spanish": 644,
+    "catalan": 644,
+    "valencian": 644
+  },
+  "significant_boundaries": 13
+}

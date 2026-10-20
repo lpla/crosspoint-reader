@@ -1,0 +1,90 @@
+[
+  {
+    "file": "baseline-en-classic-cache-warning.png",
+    "sha256": "7ec5f018875631aadfde901b304704d944157ad0c68323755507ab8682da114b"
+  },
+  {
+    "file": "candidate-en-classic-cache-warning.png",
+    "sha256": "2fdd56672d660c2823a97c2f71120fb08153a1772ccf24fbe7fe10a46ca7be8a"
+  },
+  {
+    "file": "baseline-es-classic-cache-warning.png",
+    "sha256": "6d3cfe0c2756eb5e423d7ed70a7482cbc341cbe87f72e56d00f3836435b235dd"
+  },
+  {
+    "file": "candidate-es-classic-cache-warning.png",
+    "sha256": "924c17ad2027a7eeba23c49c45fd1bec024aa7d26ce161b20d76515500cd8ad9"
+  },
+  {
+    "file": "baseline-cav-classic-cache-warning.png",
+    "sha256": "12e328d653a8f9a28280fbf1a37065ce5db94a2b14b0f9badee5bf9daeec5e2f"
+  },
+  {
+    "file": "candidate-cav-classic-cache-warning.png",
+    "sha256": "b0676c68eb6ddf06fafb178878d49d2b53aff88131011d94194b099ca4e347a0"
+  },
+  {
+    "file": "baseline-es-classic-password.png",
+    "sha256": "799ebe78e1631f76bc692a257519208ca389251bab272ae55dd19abfcd1a2956"
+  },
+  {
+    "file": "candidate-es-classic-password.png",
+    "sha256": "a49bbceec41de46061565491c0fdaa973400f87c9032f1e65b9e30f3c7215215"
+  },
+  {
+    "file": "candidate-es-password-visible.png",
+    "sha256": "363e20f869aaa49e055efc965a904cac12232845d29e55bd90793dffe4311c52"
+  },
+  {
+    "file": "candidate-cav-password-cursor-hint.png",
+    "sha256": "11c8775ba997dc81bf534fe413f0a476803070a55216b46ca7f8a3b1db5ca285"
+  },
+  {
+    "file": "candidate-es-classic-sync-ready.png",
+    "sha256": "f4c83bcf96fab675aa34ff45dc4801eb70bd51088b24a13e4d1a62c8ee6fd820"
+  },
+  {
+    "file": "candidate-es-classic-recovery.png",
+    "sha256": "59e9eb5219f650f4b67bbac9d4cac74f8b9631d6b39781f384528ee71ceb1e6a"
+  },
+  {
+    "file": "candidate-cav-classic-sync-ready.png",
+    "sha256": "b4827e7696ed772444f8a3ddccc434040f7303d3401a7da38067d912603c99b5"
+  },
+  {
+    "file": "candidate-cav-classic-recovery.png",
+    "sha256": "ac24863288177820928f02b849c87d030d7ffac47aafe1e787a9e1e9f931aa9f"
+  },
+  {
+    "file": "current-font-native-es-cache-warning.png",
+    "sha256": "82afc8cd4ce30e84102023cd914b5f44d45c7dc7f3341fb02b9860fd6e2d10b0"
+  },
+  {
+    "file": "current-font-native-es-password.png",
+    "sha256": "bf021217706091a98185336a5a9722491483c1aa9f28c11b5f43c62b227a2e20"
+  },
+  {
+    "file": "current-font-native-es-sync-ready.png",
+    "sha256": "d2863759701e2f6aaf971bb61a2b296df4b85657508a614fe659730970857713"
+  },
+  {
+    "file": "current-font-native-es-recovery.png",
+    "sha256": "40887c8e3f621077318f057e39dedf0cb02383204580f41ca08adefb69d69f2c"
+  },
+  {
+    "file": "current-font-native-cav-cache-warning.png",
+    "sha256": "5054d3c42f8683b3fe066d398b45a6f666f526ed44a1b2457a3ece248bffcd3a"
+  },
+  {
+    "file": "current-font-native-cav-password.png",
+    "sha256": "99e2be12f0ec64ef6daf5aff70327421b0f7f63e3444108d8ef8f964e8bb38f0"
+  },
+  {
+    "file": "current-font-native-cav-sync-ready.png",
+    "sha256": "c44cfce5ec3f985aa559d9c483975e4b645b6ac6e8d1b783c15b971b1bbd768d"
+  },
+  {
+    "file": "current-font-native-cav-recovery.png",
+    "sha256": "3f5bd51f43424ac969800273965cf1412baf3722f46061e5acd4e763ba742ce8"
+  }
+]
