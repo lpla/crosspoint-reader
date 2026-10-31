@@ -1,0 +1,20 @@
+Physical X4, built-in Noto Sans 14, portrait, Classic, first page of qa-clipping.epub.
+Base develop b6605a518, SDK 2d383f8463c0da313f237b4b0de225b05d55f2d6.
+Both builds use the same temporary USB QA input helper. Not a speed benchmark.
+
+Open Save clipping; alternate Right/Left 12 times without confirming a range.
+The warning begins on movement five (Right, Left, Right, Left, Right).
+
+Stock log excerpt:
+[230828] [ERR] [FDC] All 8 page buffer slots full, cannot prewarm fontData=0x3c4ad064
+[230829] [ERR] [FDC] All 8 page buffer slots full, cannot prewarm fontData=0x3c4ad064
+[238711] [DBG] [FDC] [CLIP-QA] mem: pageBuf=2288 pageGlyphs=384 hotGroup=7056 peakTemp=7056
+Total slot-full warnings over 12 movements: 16.
+
+Patched log excerpt:
+[71022] [DBG] [FDC] [CLIP-QA] mem: pageBuf=0 pageGlyphs=0 hotGroup=7056 peakTemp=0
+Total slot-full warnings over the same 12 movements: 0.
+
+All four complete framebuffer captures match between builds: book, initial
+selection, final selection and return to reader. No crash or missing text
+observed. Full redraws reset the slots; SD/vector fonts use different paths.
