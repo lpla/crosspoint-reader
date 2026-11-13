@@ -26,6 +26,9 @@ enum class SettingAction {
   RefreshLibrary,
   DisplayRefresh,
   CheckForUpdates,
+#ifdef CROSSPOINT_LPLA_OTA
+  CheckForDevelopLplaUpdates,
+#endif
   SdFirmwareUpdate,
   Language,
   DownloadFonts,
